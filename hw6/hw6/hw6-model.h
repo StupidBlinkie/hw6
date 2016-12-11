@@ -148,10 +148,10 @@ class gameState{
 		Array2dPtr boardState;
 
 		gameDef * g_def_ref; //reference to g_def, used for copying gameState
+		int prevMoveRow;
+		int prevMoveCol;
+		int prevMoveDir;
 
-		//previous move
-		//prev_move_row , col
-		//prev_move_dir
 
 	public:
 		//constructors
@@ -181,6 +181,12 @@ class gameState{
       	void set_extensionOffset(int col, int value);      
 		void initialize(gameDef* &g_def, json_t *boardstate_json);	
 		void free_gameState();
+		void set_prevMoveRow(int r){prevMoveRow = r;}
+		void set_prevMoveCol(int c){prevMoveCol = c;}
+		void set_prevMoveDir(int d){prevMoveDir = d;}
+		int get_prevMoveRow() const {return prevMoveRow;}
+		int get_prevMoveCol() const {return prevMoveCol;}
+		int get_prevMoveDir() const {return prevMoveDir;}
 		~gameState(void);
 
 		//gamestate processing methods
@@ -366,6 +372,7 @@ inline gameState::~gameState(void){
 	free(boardState->storage);
 	free(boardState);
 	free(internal_boardState);
+
 	cout << "gamestate Object is being deleted" << endl;
 }
 

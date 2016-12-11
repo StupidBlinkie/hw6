@@ -11,6 +11,7 @@ extern "C"{
 #include <string>
 #include <vector>
 #include <cstdlib>
+#include <queue>
 
 using namespace std;
 
@@ -29,12 +30,58 @@ char* generate_hello_message(){
 
 
 void findMove(gameState* &initial_state){
-          cout<< "initial_state " << endl;
-        initial_state->printSummary();
 
-        cout<< "copy of original gamestate" << endl;
-        gameState* copy = new gameState(initial_state);
-        copy->printSummary();
+  int rows = initial_state ->get_rows();
+  int cols = initial_state ->get_cols();
+  cout<< "copy of original gamestate" << endl;
+  gameState* copy_initial = new gameState(initial_state);
+  copy_initial->printSummary();
+  queue<gameState*> q;
+  q.push(initial_state);
+
+  while(!q.empty()){
+    //gameState cur = new gameState(q.front());
+    gameState* cur = q.front();
+    if(cur->get_currScore() == rows*cols){
+      return;
+    }
+    
+    for (int r = 0; r<rows; r++){
+      for (int c = 0; c< cols; c++){
+          gameState* cur_copy = new gameState(cur);
+
+          for (int d = 0; d< 2; d++){          
+            if (d == 0){
+              cur_copy-> swap_candy_elements(r, c, r+1, c);
+            }else{
+              cur_copy-> swap_candy_elements(r, c, r, c+1);
+            }
+            
+            if(cur_copy->applyTemplate()){
+              cur_copy->set_prevMoveRow(r);
+              cur_copy->set_prevMoveCol(c);
+              cur_copy->set_prevMoveDir(d*2 + 1);  //1 - right, 3 - up
+              q.push(cur_copy); //push modified cur board
+              //map.add(cur_copy, cur); ****
+              cout<< "pushed to queue..." << endl;
+              cur_copy->printSummary();
+            }
+            else{ //if no template match, swap back to reuse cur_copy
+              if (d == 0){
+                cur_copy-> swap_candy_elements(r, c, r+1, c);
+              }else{
+                cur_copy-> swap_candy_elements(r, c, r, c+1);
+              }             
+            }  
+
+        }     
+      }
+    }
+    q.pop();
+
+
+  }
+
 }
 
 
@@ -64,7 +111,7 @@ int main(int argc, char *argv[]) {
     gameDef* g_def = new gameDef();
     gameState* g_state = new gameState();
     deserialize(gamedata, g_def, g_state);  //loads g_def & g_state
-g_state->printSummary();
+
 
     //g_state->applyTemplate();
     
