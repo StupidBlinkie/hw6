@@ -29,7 +29,7 @@ hw5_server:  hw5_server.o $(OBJS) $(SOCKDIR)/ServerSocket.o
 
 hw6-client:  hw6-client.o $(OBJS) $(LIBS)
 	cd $(SOCKDIR) && make
-	$(CXX) $(CFLAGS) hw6-client.o $(OBJS) $(IFLAGS) $(LDFLAGS) -o hw6-client
+	$(CXX) $(CFLAGS) hw6-client.o $(OBJS) $(IFLAGS) $(LDFLAGS) -o hw6-client -lpthread
 
 %.o: %.cc $(HEADERS)
 	$(CXX) -std=c++11 $(CFLAGS) $(IFLAGS) $(GTKCFLAGS) $(LDFLAGS) -c $<

@@ -40,6 +40,8 @@ class gameDef{
  	int gameID;
 	int movesAllowed;
  	int colors;
+   
+   int maxScore;
 
  	int* internal_extencolor; //copies data read from json
  	int* internal_boardstate; //copies data read from json
@@ -50,6 +52,8 @@ class gameDef{
 
  public:
  	//simple get/set
+   int get_max_score() {return maxScore;}
+   
 	void set_gameID(int id){gameID = id;}
 	void set_movesAllowed(int m) {movesAllowed = m;}
 	void set_colors(int c) {colors = c;}
@@ -95,9 +99,11 @@ inline void gameDef::set_boardState(int rows, int cols,int* data_from_json){
 	boardState_row = rows;
 	boardState_col = cols;
 	internal_boardstate = (int*)malloc(rows * cols * sizeof(int));
-
+   
+   maxScore = 0;
 	for(int i=0; i<rows*cols; i++){
 		internal_boardstate[i] = data_from_json[i];
+      maxScore += data_from_json[i];
 	}
 
 	boardState = A2d_AllocateArray2d(rows, cols, sizeof(void*));
@@ -135,6 +141,12 @@ inline gameDef::~gameDef(void){
 //----------------game state class-------------------//
 class gameState{
 	private: 
+      int prevMoveRow;
+      int prevMoveCol;
+      int prevMoveDir;
+      
+      int potentialScore; //used to show the score that is possible in future moves
+      
 		int rows, cols;
 		int gameID;
 		int movesMade = 0;
@@ -148,10 +160,10 @@ class gameState{
 		Array2dPtr boardState;
 
 		gameDef * g_def_ref; //reference to g_def, used for copying gameState
-		int prevMoveRow;
-		int prevMoveCol;
-		int prevMoveDir;
 
+		//previous move
+		//prev_move_row , col
+		//prev_move_dir
 
 	public:
 		//constructors
@@ -159,6 +171,18 @@ class gameState{
 		gameState(gameState* &obj);
 
 		//accessing data in class
+      void set_prev_move_row(int r) {prevMoveRow = r;}
+      void set_prev_move_col(int c) {prevMoveCol = c;}
+      void set_prev_move_dir(int d) {prevMoveDir = d;}
+      
+      int get_prev_move_row() {return prevMoveRow;}
+      int get_prev_move_col() {return prevMoveCol;}
+      int get_prev_move_dir() {return prevMoveDir;}
+      
+      void set_potential_score(int score) {potentialScore = score;}
+      
+      int get_potential_score() {return potentialScore;}
+      
 		void set_gameID(int id) { gameID = id; }
 		void incre_movesMade()  { movesMade += 1; }
 		int get_movesMade() {return movesMade; }
@@ -181,12 +205,6 @@ class gameState{
       	void set_extensionOffset(int col, int value);      
 		void initialize(gameDef* &g_def, json_t *boardstate_json);	
 		void free_gameState();
-		void set_prevMoveRow(int r){prevMoveRow = r;}
-		void set_prevMoveCol(int c){prevMoveCol = c;}
-		void set_prevMoveDir(int d){prevMoveDir = d;}
-		int get_prevMoveRow() const {return prevMoveRow;}
-		int get_prevMoveCol() const {return prevMoveCol;}
-		int get_prevMoveDir() const {return prevMoveDir;}
 		~gameState(void);
 
 		//gamestate processing methods
@@ -207,7 +225,7 @@ class gameState{
 //constructors
 inline gameState::gameState(void){}
 inline gameState::gameState(gameState* &obj){
-	cout<< "constructing gameState with copy constructor" << endl;
+	// cout<< "constructing gameState with copy constructor" << endl;
 	rows = obj->get_rows();
 	cols = obj->get_cols();
 	gameID = obj->get_gameID();
@@ -372,7 +390,6 @@ inline gameState::~gameState(void){
 	free(boardState->storage);
 	free(boardState);
 	free(internal_boardState);
-
 	cout << "gamestate Object is being deleted" << endl;
 }
 
