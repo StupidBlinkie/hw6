@@ -160,6 +160,8 @@ class gameState{
 		Array2dPtr boardState;
 
 		gameDef * g_def_ref; //reference to g_def, used for copying gameState
+      
+      gameState * nextBestState;
 
 		//previous move
 		//prev_move_row , col
@@ -169,6 +171,10 @@ class gameState{
 		//constructors
 		gameState(void);
 		gameState(gameState* &obj);
+      
+      void set_next_best(gameState* nb) {nextBestState = nb;};
+      
+      gameState* get_next_best() {return nextBestState;}
 
 		//accessing data in class
       void set_prev_move_row(int r) {prevMoveRow = r;}
@@ -390,7 +396,7 @@ inline gameState::~gameState(void){
 	free(boardState->storage);
 	free(boardState);
 	free(internal_boardState);
-	cout << "gamestate Object is being deleted" << endl;
+	//cout << "gamestate Object is being deleted" << endl;
 }
 
 

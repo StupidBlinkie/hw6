@@ -16,6 +16,7 @@ extern "C"{
 
 using namespace std;
 
+int movesEvaluated;
 
 void usage(const char *exeName) {
   cout << "Usage: " << exeName << " host port" << endl;
@@ -33,7 +34,7 @@ char* generate_hello_message(){
 
 
 
-void findBestMove(gameState* g_state, int depthsLeft, gameState* returnState) {
+void findBestMove(gameState* g_state, int depthsLeft) {
    // if we have max score or we have reached the lowest lever desired
    if (g_state->get_currScore() == g_state->get_g_def_ref()->get_max_score() || depthsLeft == 0) {
       
@@ -43,26 +44,21 @@ void findBestMove(gameState* g_state, int depthsLeft, gameState* returnState) {
       // why add depths left?... Because if their are still depths left, this means that a solution was
       // found in very few moves. 
       g_state->set_potential_score(g_state->get_currScore() + depthsLeft);
-      returnState = g_state;
+      return;
    }
    
    // keep track of boardstates and threads
    queue<gameState*> statesToEvaluate;
    queue<thread*> threads;
-   
-   // since threads cannot return things (that I know of) we will use a gameState pointer that we will
-   // pass in to each thread in order to "return" good moves.
-   queue<gameState*> returnedGameStates;
-   
-   
+      
    // for each candy
-   for (int row = 0; row < g_state->get_rows(); row++) {
+   for (int row = g_state->get_rows() - 1; row >= 0; row--) {
       for (int col = 0; col < g_state->get_cols(); col++) {
          
          // create two copies: one for right swap, one for up swap
          gameState* right_copy = new gameState(g_state);
          gameState* up_copy = new gameState(g_state);
-         
+                  
          // swap the candies
          right_copy->swap_candy_elements(row, col, row, col + 1);
          up_copy->swap_candy_elements(row, col, row + 1, col);
@@ -72,77 +68,76 @@ void findBestMove(gameState* g_state, int depthsLeft, gameState* returnState) {
             right_copy->set_prev_move_row(row);
             right_copy->set_prev_move_col(col);
             right_copy->set_prev_move_dir(1);
+            right_copy->incre_movesMade();
             statesToEvaluate.push(right_copy);
             
             //start thread on this new boardstate. g is used as return pointer
-            gameState* g;
-            returnedGameStates.push(g);
-            thread* tr = new thread(findBestMove, right_copy, depthsLeft - 1, g);
+            
+         //   cout << "before on right: " << g << endl;
+         //   findBestMove(right_copy, depthsLeft - 1);
+            
+         //   cout << "address after method call on right:              " << g << endl;
+            thread* tr = new thread(findBestMove, right_copy, depthsLeft - 1);
             threads.push(tr);
             
          } else {
-            // destroy right_copy?
+            delete right_copy;
          }
          // same thing with up swap
          if (up_copy->applyTemplate()) {
             up_copy->set_prev_move_row(row);
             up_copy->set_prev_move_col(col);
             up_copy->set_prev_move_dir(2);
+            up_copy->incre_movesMade();
             statesToEvaluate.push(up_copy);
-            gameState* g;
-            returnedGameStates.push(g);
-            thread* tr = new thread(findBestMove, up_copy, depthsLeft - 1, g);
+            
+            thread* tr = new thread(findBestMove, up_copy, depthsLeft - 1);
             threads.push(tr);
          } else {
-            // destroy up_copy?
+            delete up_copy;
          }
       }
    }
-   cout << "checkpoint 2" << endl;
+   
+   movesEvaluated += statesToEvaluate.size();
+   
    
    // set maxPotential to be 0 and best gameState to be original gameState
    int bestPotential = 0;
-   gameState* bestState = g_state;
    
    //while there are more moves to evaluate...
    while (statesToEvaluate.size() != 0){
-      // get next gameState
-      cout << "checkpoint 3" << endl;
-      gameState* curr = statesToEvaluate.front();
       
-      // remove that gameState from queue
-      statesToEvaluate.pop();
-      cout << "joining..." << endl;
+      //join thread in order to access potScore for curr      
       thread* tr = threads.front();
       threads.pop();
       tr->join();
-      cout << "done joining.." << endl; // never makes it to this line... possible point of termination?
-     
-      // This is where I used to look deeper, in current file, I thread right after creating new state
-     // gameState* newGameState = findBestMove(curr, depthsLeft - 1);
-     
-     // get the gameState created from threading
-      gameState* newGameState = returnedGameStates.front();
-      returnedGameStates.pop();
+       
+      // now that we have joined, curr should have potScore
+      gameState* curr = statesToEvaluate.front();
+         
+      // remove that gameState from queue
+      statesToEvaluate.pop();
       
       // get the potential score (highest score of leaves for curr)
-      int potScore = newGameState->get_potential_score();
+      int potScore = curr->get_potential_score();
+      
       // if potScore is greater than bestPotential, update
       if (potScore > bestPotential) {
-      
          // set field for gameState to be new potentialScore
-         curr->set_potential_score(potScore);
+         g_state->set_potential_score(potScore);
          
-         // update bestPotential and bestState
+         //save curr as field in g_state. This is a way of "returning a new state" to access later
+         g_state->set_next_best(curr);
+                  
+         // update bestPotential
          bestPotential = potScore;
-         bestState = curr;
+         
+         
       } else {
-         // destroy curr?
+         delete curr;
       }
    }
-   
-   // return the best state
-   returnState = bestState;
 }
 
 
@@ -225,10 +220,10 @@ g_state->printSummary();
         //replace the following with your findmoves() method
         //click a candy and a button on hw5-server will cause client to send a calculated move
         //**************************************
-
-        findBestMove(g_state, 4, g_state);
-        cout << "best move   : " << g_state->get_currScore() << endl;
-        cout << "g_states new score after best move   : " << g_state->get_currScore() << endl;
+        movesEvaluated = 0;
+        findBestMove(g_state, 3);
+        
+        g_state = g_state->get_next_best();
 
         //**************************************
 
@@ -439,6 +434,18 @@ char* serialize(gameState* &g_state){
   json_object_set(gamestate, "movesmade", movesmade);
   json_object_set(gamestate, "currentscore", currentscore);
   json_object_set(gamestate, "extensionoffset", extensionoffset);
+  
+  
+  //serialize move
+  json_t* move = json_object();
+  json_t* move_row = json_integer(g_state->get_prev_move_row());
+  json_t* move_col = json_integer(g_state->get_prev_move_col());
+  json_t* move_dir = json_integer(g_state->get_prev_move_dir());
+  
+  json_object_set(move, "row", move_row);
+  json_object_set(move, "column", move_col);
+  json_object_set(move, "direction", move_dir);
+
 
   //END ------------------------- serialize gamestate----------------------
 
@@ -447,8 +454,11 @@ char* serialize(gameState* &g_state){
   json_object_set(obj, "gamestate", gamestate);
 
   json_t* json_final = json_object();
-  json_object_set(json_final, "action", json_string("update"));
+  json_object_set(json_final, "action", json_string("mymove"));
+  json_object_set(json_final, "teamname", json_string("kwg5 & jackgu"));
   json_object_set(json_final, "gameinstance", obj);
+  json_object_set(json_final, "move", move);
+  json_object_set(json_final, "movesevaluated", json_integer(movesEvaluated));
 
 
   char* temp = json_dumps(json_final , JSON_COMPACT);
