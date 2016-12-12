@@ -27,6 +27,7 @@ void usage(const char *exeName) {
 char* generate_hello_message(){
   json_t* json_final = json_object();
   json_object_set(json_final, "action", json_string("hello"));
+  json_object_set(json_final, "teamname", json_string("kwg5&jackgu"));
   return json_dumps(json_final, JSON_COMPACT); 
 }
 
@@ -455,7 +456,7 @@ char* serialize(gameState* &g_state){
 
   json_t* json_final = json_object();
   json_object_set(json_final, "action", json_string("mymove"));
-  json_object_set(json_final, "teamname", json_string("kwg5 & jackgu"));
+  json_object_set(json_final, "teamname", json_string("kwg5&jackgu"));
   json_object_set(json_final, "gameinstance", obj);
   json_object_set(json_final, "move", move);
   json_object_set(json_final, "movesevaluated", json_integer(movesEvaluated));
